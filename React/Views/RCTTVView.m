@@ -287,14 +287,44 @@ RCT_NOT_IMPLEMENTED(-(instancetype)initWithCoder : unused)
   return focusEnvironment;
 }
 
-- (void)sendFocusNotification:(__unused UIFocusUpdateContext *)context
-{
-    [self sendNotificationWithEventType:@"focus"];
+- (NSString *)directionFromContext:(UIFocusUpdateContext *)context {
+    NSString *direction = @"";
+    switch (context.focusHeading) {
+        case UIFocusHeadingUp:
+            direction = @"up";
+            break;
+        case UIFocusHeadingDown:
+            direction = @"down";
+            break;
+        case UIFocusHeadingLeft:
+            direction = @"left";
+            break;
+        case UIFocusHeadingRight:
+            direction = @"right";
+            break;
+        case UIFocusHeadingNone:
+            direction = @"none";
+            break;
+        case UIFocusHeadingNext:
+            direction = @"next";
+            break;
+        case UIFocusHeadingPrevious:
+            direction = @"previous";
+            break;
+    }
+    return direction;
 }
 
-- (void)sendBlurNotification:(__unused UIFocusUpdateContext *)context
+- (void)sendFocusNotification:(UIFocusUpdateContext *)context
 {
-    [self sendNotificationWithEventType:@"blur"];
+    [self sendNotificationWithEventType:@"focus"
+                           andDirection:[self directionFromContext:context]];
+}
+
+- (void)sendBlurNotification:(UIFocusUpdateContext *)context
+{
+    [self sendNotificationWithEventType:@"blur"
+                           andDirection:[self directionFromContext:context]];
 }
 
 - (void)sendSelectNotification:(UIGestureRecognizer *)recognizer
@@ -304,11 +334,18 @@ RCT_NOT_IMPLEMENTED(-(instancetype)initWithCoder : unused)
 
 - (void)sendNotificationWithEventType:(NSString * __nonnull)eventType
 {
+    [self sendNotificationWithEventType:eventType andDirection:@""];
+}
+
+- (void)sendNotificationWithEventType:(NSString * __nonnull)eventType
+                          andDirection:(NSString * __nonnull)direction
+{
   [[NSNotificationCenter defaultCenter] postNotificationName:@"RCTTVNavigationEventNotification"
                                                       object:@{
                                                           @"eventType":eventType,
                                                           @"tag":self.reactTag,
-                                                          @"target":self.reactTag
+                                                          @"target":self.reactTag,
+                                                          @"direction":direction
                                                       }];
 }
 
