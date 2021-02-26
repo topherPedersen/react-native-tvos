@@ -33,6 +33,8 @@ type ButtonProps = $ReadOnly<{|
    * Handler to be called when the user taps the button
    */
   onPress: (event?: PressEvent) => mixed,
+  onFocus: (event?: PressEvent) => mixed,
+  onBlur:  (event?: PressEvent) => mixed,
 
   /**
    * If true, doesn't play system sound on touch (Android Only)
@@ -134,6 +136,8 @@ class Button extends React.Component<ButtonProps> {
       accessibilityLabel,
       color,
       onPress,
+      onFocus,
+      onBlur,
       touchSoundDisabled,
       title,
       hasTVPreferredFocus,
@@ -182,6 +186,8 @@ class Button extends React.Component<ButtonProps> {
         testID={testID}
         disabled={disabled}
         onPress={onPress}
+        onFocus={onFocus}
+        onBlur={onBlur}
         touchSoundDisabled={touchSoundDisabled}>
         <View style={buttonStyles}>
           <Text style={textStyles} disabled={disabled}>
