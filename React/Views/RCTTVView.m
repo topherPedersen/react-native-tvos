@@ -18,10 +18,75 @@
 #import "RCTView.h"
 #import "UIView+React.h"
 #import <React/RCTUIManager.h>
+#import <GameController/GameController.h>
+
+typedef enum {
+    DPadStateNone,
+    DPadStateUpperLeft,
+    DPadStateUpperRight
+} DPadState;
+
+@interface RCTTVSelectGestureRecognizer : UITapGestureRecognizer
+
+@property (nonatomic, assign) DPadState dpadState;
+@property (nonatomic, assign) DPadState selectState;
+
+@end
+
+
+@implementation RCTTVSelectGestureRecognizer
+
+- (instancetype)initWithTarget:(id)target action:(SEL)action
+{
+    if (self = [super initWithTarget:target action:action]) {
+        [self setupDpad];
+    }
+    return self;
+}
+
+- (void)pressesBegan:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
+{
+    for (UIPress *press in presses) {
+        switch (press.type) {
+            case UIPressTypeSelect:
+                self.selectState = self.dpadState;
+                break;
+            default:
+                break;
+        }
+    }
+    [super pressesBegan:presses withEvent:event];
+}
+
+#define THRESHOLD 0.8
+- (void)setupDpad
+{
+    GCController *controller = [[GCController controllers] firstObject];
+    GCMicroGamepad *micro = controller.microGamepad;
+    if (micro) {
+        micro.reportsAbsoluteDpadValues = YES;
+        __weak RCTTVSelectGestureRecognizer *weakSelf = self;
+        micro.dpad.valueChangedHandler = ^(GCControllerDirectionPad * _Nonnull dpad, float xValue, float yValue) {
+            if (yValue > THRESHOLD) {
+                if (xValue > THRESHOLD) {
+                    weakSelf.dpadState = DPadStateUpperRight;
+                } else if (xValue < -THRESHOLD) {
+                    weakSelf.dpadState = DPadStateUpperLeft;
+                } else {
+                    weakSelf.dpadState = DPadStateNone;
+                }
+            }
+        };
+    }
+}
+
+
+
+@end
 
 @implementation RCTTVView {
   __weak RCTBridge *_bridge;
-  UITapGestureRecognizer *_selectRecognizer;
+  RCTTVSelectGestureRecognizer *_selectRecognizer;
   BOOL motionEffectsAdded;
 }
 
@@ -72,8 +137,7 @@ RCT_NOT_IMPLEMENTED(-(instancetype)initWithCoder : unused)
 {
   self->_isTVSelectable = isTVSelectable;
   if (isTVSelectable) {
-    UITapGestureRecognizer *recognizer = [[UITapGestureRecognizer alloc] initWithTarget:self
-                                                                                 action:@selector(handleSelect:)];
+    RCTTVSelectGestureRecognizer *recognizer = [[RCTTVSelectGestureRecognizer alloc] initWithTarget:self action:@selector(handleSelect:)];
     recognizer.allowedPressTypes = @[ @(UIPressTypeSelect) ];
     _selectRecognizer = recognizer;
     [self addGestureRecognizer:_selectRecognizer];
@@ -86,6 +150,14 @@ RCT_NOT_IMPLEMENTED(-(instancetype)initWithCoder : unused)
 
 - (void)handleSelect:(__unused UIGestureRecognizer *)r
 {
+    if (self->_selectRecognizer.selectState == DPadStateUpperLeft) {
+        [self sendSelectLeftNotification:r];
+        return;
+    }
+    if (self->_selectRecognizer.selectState == DPadStateUpperRight) {
+        [self sendSelectRightNotification:r];
+        return;
+    }
   if ([self.tvParallaxProperties[@"enabled"] boolValue] == YES) {
     float magnification = [self.tvParallaxProperties[@"magnification"] floatValue];
     float pressMagnification = [self.tvParallaxProperties[@"pressMagnification"] floatValue];
@@ -300,6 +372,16 @@ RCT_NOT_IMPLEMENTED(-(instancetype)initWithCoder : unused)
 - (void)sendSelectNotification:(UIGestureRecognizer *)recognizer
 {
     [self sendNotificationWithEventType:@"select"];
+}
+
+- (void)sendSelectLeftNotification:(UIGestureRecognizer *)recognizer
+{
+    [self sendNotificationWithEventType:@"selectLeft"];
+}
+
+- (void)sendSelectRightNotification:(UIGestureRecognizer *)recognizer
+{
+    [self sendNotificationWithEventType:@"selectRight"];
 }
 
 - (void)sendNotificationWithEventType:(NSString * __nonnull)eventType
