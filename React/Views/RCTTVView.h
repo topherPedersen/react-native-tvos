@@ -54,6 +54,8 @@
  * Send Select Notification to listeners
  */
 - (void)sendSelectNotification:(UIGestureRecognizer *)recognizer;
+- (void)sendSelectLeftNotification:(UIGestureRecognizer *)recognizer;
+- (void)sendSelectRightNotification:(UIGestureRecognizer *)recognizer;
 
 /**
  * Adds Parallax Motion Effects if tvParallaxProperty is enabled

@@ -28,8 +28,8 @@ typedef enum {
 
 @interface RCTTVSelectGestureRecognizer : UITapGestureRecognizer
 
-@property (nonatomic, assign) DPadState dpadState;
-@property (nonatomic, assign) DPadState selectState;
+@property (nonatomic, assign) CGPoint dpadLocation;
+@property (weak) RCTTVView *tvView;
 
 @end
 
@@ -39,26 +39,12 @@ typedef enum {
 - (instancetype)initWithTarget:(id)target action:(SEL)action
 {
     if (self = [super initWithTarget:target action:action]) {
+        self.tvView = (RCTTVView *)target;
         [self setupDpad];
     }
     return self;
 }
 
-- (void)pressesBegan:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
-{
-    for (UIPress *press in presses) {
-        switch (press.type) {
-            case UIPressTypeSelect:
-                self.selectState = self.dpadState;
-                break;
-            default:
-                break;
-        }
-    }
-    [super pressesBegan:presses withEvent:event];
-}
-
-#define THRESHOLD 0.8
 - (void)setupDpad
 {
     GCController *controller = [[GCController controllers] firstObject];
@@ -67,19 +53,41 @@ typedef enum {
         micro.reportsAbsoluteDpadValues = YES;
         __weak RCTTVSelectGestureRecognizer *weakSelf = self;
         micro.dpad.valueChangedHandler = ^(GCControllerDirectionPad * _Nonnull dpad, float xValue, float yValue) {
-            if (yValue > THRESHOLD) {
-                if (xValue > THRESHOLD) {
-                    weakSelf.dpadState = DPadStateUpperRight;
-                } else if (xValue < -THRESHOLD) {
-                    weakSelf.dpadState = DPadStateUpperLeft;
-                } else {
-                    weakSelf.dpadState = DPadStateNone;
-                }
-            }
+            NSLog(@"DPad: x = %4.1f, y = %4.1f", xValue, yValue);
+            
+            weakSelf.dpadLocation = CGPointMake(xValue, yValue);
         };
     }
 }
 
+- (void)pressesBegan:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
+{
+    for (UIPress *press in presses) {
+        NSLog(@"Press type: %ld, Location: %4.2f, %4.2f", press.type, self.dpadLocation.x,
+              self.dpadLocation.y);
+        if (press.type == UIPressTypeSelect) {
+
+            if ([self inUpperLeftArea]) {
+                [self.tvView sendSelectLeftNotification:self];
+            } else if ([self inUpperRightArea]) {
+                [self.tvView sendSelectRightNotification:self];
+            } else {
+                [super pressesBegan:presses withEvent:event];
+            }
+        }
+    }
+}
+
+#define THRESHOLD 0.6
+- (BOOL)inUpperLeftArea
+{
+    return (self.dpadLocation.y > THRESHOLD && self.dpadLocation.x < -THRESHOLD);
+}
+
+- (BOOL)inUpperRightArea
+{
+    return (self.dpadLocation.y > THRESHOLD && self.dpadLocation.x > THRESHOLD);
+}
 
 
 @end
@@ -150,14 +158,6 @@ RCT_NOT_IMPLEMENTED(-(instancetype)initWithCoder : unused)
 
 - (void)handleSelect:(__unused UIGestureRecognizer *)r
 {
-    if (self->_selectRecognizer.selectState == DPadStateUpperLeft) {
-        [self sendSelectLeftNotification:r];
-        return;
-    }
-    if (self->_selectRecognizer.selectState == DPadStateUpperRight) {
-        [self sendSelectRightNotification:r];
-        return;
-    }
   if ([self.tvParallaxProperties[@"enabled"] boolValue] == YES) {
     float magnification = [self.tvParallaxProperties[@"magnification"] floatValue];
     float pressMagnification = [self.tvParallaxProperties[@"pressMagnification"] floatValue];
