@@ -24,6 +24,8 @@ extern NSString *const RCTTVRemoteEventSwipeRight;
 extern NSString *const RCTTVRemoteEventSwipeUp;
 extern NSString *const RCTTVRemoteEventSwipeDown;
 
+extern NSString *const RCTTVRemoteEventPan;
+
 @interface RCTTVRemoteHandler : NSObject
 
 @property (nonatomic, copy, readonly) NSDictionary *tvRemoteGestureRecognizers;

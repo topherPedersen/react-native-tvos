@@ -28,10 +28,12 @@ typedef enum {
 
 @interface RCTTVSelectGestureRecognizer : UITapGestureRecognizer
 
-@property (nonatomic, assign) CGPoint dpadLocation;
 @property (weak) RCTTVView *tvView;
 
 @end
+
+static float dpadX;
+static float dpadY;
 
 
 @implementation RCTTVSelectGestureRecognizer
@@ -51,11 +53,12 @@ typedef enum {
     GCMicroGamepad *micro = controller.microGamepad;
     if (micro) {
         micro.reportsAbsoluteDpadValues = YES;
-        __weak RCTTVSelectGestureRecognizer *weakSelf = self;
         micro.dpad.valueChangedHandler = ^(GCControllerDirectionPad * _Nonnull dpad, float xValue, float yValue) {
-            NSLog(@"DPad: x = %4.1f, y = %4.1f", xValue, yValue);
-            
-            weakSelf.dpadLocation = CGPointMake(xValue, yValue);
+            if (xValue != 0 && yValue != 0) {
+                dpadX = xValue;
+                dpadY = yValue;
+                NSLog(@"dpadLocation = %5.2f,%5.2f",dpadX,dpadY);
+            }
         };
     }
 }
@@ -63,8 +66,7 @@ typedef enum {
 - (void)pressesBegan:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
 {
     for (UIPress *press in presses) {
-        NSLog(@"Press type: %ld, Location: %4.2f, %4.2f", press.type, self.dpadLocation.x,
-              self.dpadLocation.y);
+        NSLog(@"press type = %ld, dpad = %5.2f,%5.2f", press.type, dpadX, dpadY);
         if (press.type == UIPressTypeSelect) {
 
             if ([self inUpperLeftArea]) {
@@ -78,15 +80,15 @@ typedef enum {
     }
 }
 
-#define THRESHOLD 0.6
+#define THRESHOLD 0.3
 - (BOOL)inUpperLeftArea
 {
-    return (self.dpadLocation.y > THRESHOLD && self.dpadLocation.x < -THRESHOLD);
+    return (dpadY > THRESHOLD && dpadX < -THRESHOLD);
 }
 
 - (BOOL)inUpperRightArea
 {
-    return (self.dpadLocation.y > THRESHOLD && self.dpadLocation.x > THRESHOLD);
+    return (dpadY > THRESHOLD && dpadX > THRESHOLD);
 }
 
 

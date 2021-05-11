@@ -37,6 +37,8 @@ NSString *const RCTTVRemoteEventSwipeRight = @"swipeRight";
 NSString *const RCTTVRemoteEventSwipeUp = @"swipeUp";
 NSString *const RCTTVRemoteEventSwipeDown = @"swipeDown";
 
+NSString *const RCTTVRemoteEventPan = @"pan";
+
 @implementation RCTTVRemoteHandler {
   NSMutableDictionary<NSString *, UIGestureRecognizer *> *_tvRemoteGestureRecognizers;
 }
@@ -113,9 +115,24 @@ NSString *const RCTTVRemoteEventSwipeDown = @"swipeDown";
     [self addSwipeGestureRecognizerWithSelector:@selector(swipedRight:)
                                       direction:UISwipeGestureRecognizerDirectionRight
                                            name:RCTTVRemoteEventSwipeRight];
+      
+      // Pan
+      [self addPanGestureRecognizerWithSelector:@selector(panned:) name:RCTTVRemoteEventPan];
+      
   }
 
   return self;
+}
+
+- (void)panned:(UIPanGestureRecognizer *)r
+{
+    /*
+    CGPoint translation = [r translationInView:r.view];
+    NSLog(@"translation: %5.2f,%5.2f", translation.x, translation.y);
+    CGPoint velocity = [r velocityInView:r.view];
+    NSLog(@"velocity: %5.2f,%5.2f", velocity.x, velocity.y);
+    [self sendAppleTVEvent:RCTTVRemoteEventPan toView:r.view];
+     */
 }
 
 - (void)playPausePressed:(UIGestureRecognizer *)r
@@ -214,8 +231,15 @@ NSString *const RCTTVRemoteEventSwipeDown = @"swipeDown";
 {
   UISwipeGestureRecognizer *recognizer = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:selector];
   recognizer.direction = direction;
-
+    
   _tvRemoteGestureRecognizers[name] = recognizer;
+}
+
+- (void)addPanGestureRecognizerWithSelector:(nonnull SEL)selector
+                                       name:(NSString *)name
+{
+    UIPanGestureRecognizer *recognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:selector];
+    _tvRemoteGestureRecognizers[name] = recognizer;
 }
 
 - (void)sendAppleTVEvent:(NSString *)eventType toView:(__unused UIView *)v
