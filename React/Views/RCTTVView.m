@@ -18,10 +18,64 @@
 #import "RCTView.h"
 #import "UIView+React.h"
 #import <React/RCTUIManager.h>
+#if RN_TVOS_CORNER_CLICKS
+#import <GameController/GameController.h>
+#endif
+
+@interface RCTTVSelectGestureRecognizer : UITapGestureRecognizer
+
+@property (weak) RCTTVView *tvView;
+
+@end
+
+#if RN_TVOS_CORNER_CLICKS
+static float dpadX, dpadY;
+#endif
+
+@implementation RCTTVSelectGestureRecognizer
+
+- (instancetype)initWithTarget:(id)target action:(SEL)action
+{
+    if (self = [super initWithTarget:target action:action]) {
+        self.tvView = (RCTTVView *)target;
+#if RN_TVOS_CORNER_CLICKS
+        [self setupDpad];
+#endif
+    }
+    return self;
+}
+#if RN_TVOS_CORNER_CLICKS
+- (void)setupDpad
+{
+    GCController *controller = [[GCController controllers] firstObject];
+    GCMicroGamepad *micro = controller.microGamepad;
+    if (micro) {
+        micro.reportsAbsoluteDpadValues = YES;
+        micro.dpad.valueChangedHandler = ^(GCControllerDirectionPad * _Nonnull dpad, float xValue, float yValue) {
+            if (xValue != 0 && yValue != 0) {
+                dpadX = xValue;
+                dpadY = yValue;
+            }
+        };
+    }
+}
+
+- (void)pressesBegan:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
+{
+    for (UIPress *p in presses) {
+        if (p.type == UIPressTypeSelect) {
+            self.tvView.dpadX = dpadX;
+            self.tvView.dpadY = dpadY;
+        }
+    }
+}
+#endif
+
+@end
 
 @implementation RCTTVView {
   __weak RCTBridge *_bridge;
-  UITapGestureRecognizer *_selectRecognizer;
+  RCTTVSelectGestureRecognizer *_selectRecognizer;
   BOOL motionEffectsAdded;
 }
 
@@ -72,8 +126,7 @@ RCT_NOT_IMPLEMENTED(-(instancetype)initWithCoder : unused)
 {
   self->_isTVSelectable = isTVSelectable;
   if (isTVSelectable) {
-    UITapGestureRecognizer *recognizer = [[UITapGestureRecognizer alloc] initWithTarget:self
-                                                                                 action:@selector(handleSelect:)];
+    RCTTVSelectGestureRecognizer *recognizer = [[RCTTVSelectGestureRecognizer alloc] initWithTarget:self action:@selector(handleSelect:)];
     recognizer.allowedPressTypes = @[ @(UIPressTypeSelect) ];
     _selectRecognizer = recognizer;
     [self addGestureRecognizer:_selectRecognizer];
@@ -84,8 +137,31 @@ RCT_NOT_IMPLEMENTED(-(instancetype)initWithCoder : unused)
   }
 }
 
+#if RN_TVOS_CORNER_CLICKS
+#define THRESHOLD 0.5
+- (BOOL)inUpperLeftArea
+{
+    return (self.dpadY > THRESHOLD && self.dpadX < -THRESHOLD);
+}
+
+- (BOOL)inUpperRightArea
+{
+    return (self.dpadY > THRESHOLD && self.dpadX > THRESHOLD);
+}
+#endif
+
 - (void)handleSelect:(__unused UIGestureRecognizer *)r
 {
+#if RN_TVOS_CORNER_CLICKS
+    if ([self inUpperLeftArea]) {
+        [self sendStepLeftNotification:r];
+        return;
+    }
+    if ([self inUpperRightArea]) {
+        [self sendStepRightNotification:r];
+        return;
+    }
+#endif
   if ([self.tvParallaxProperties[@"enabled"] boolValue] == YES) {
     float magnification = [self.tvParallaxProperties[@"magnification"] floatValue];
     float pressMagnification = [self.tvParallaxProperties[@"pressMagnification"] floatValue];
@@ -300,6 +376,16 @@ RCT_NOT_IMPLEMENTED(-(instancetype)initWithCoder : unused)
 - (void)sendSelectNotification:(UIGestureRecognizer *)recognizer
 {
     [self sendNotificationWithEventType:@"select"];
+}
+
+- (void)sendStepLeftNotification:(UIGestureRecognizer *)recognizer
+{
+    [self sendNotificationWithEventType:@"stepLeft"];
+}
+
+- (void)sendStepRightNotification:(UIGestureRecognizer *)recognizer
+{
+    [self sendNotificationWithEventType:@"stepRight"];
 }
 
 - (void)sendNotificationWithEventType:(NSString * __nonnull)eventType

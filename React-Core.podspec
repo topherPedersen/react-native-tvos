@@ -68,6 +68,7 @@ Pod::Spec.new do |s|
                                 "React/Views/RCTSlider*",
                                 "React/Views/RCTSwitch*"
     ss.private_header_files   = "React/Cxx*/*.h"
+    ss.tvos.frameworks        = "GameController"
   end
 
   s.subspec "Hermes" do |ss|

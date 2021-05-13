@@ -73,5 +73,7 @@ end
 
 post_install do |installer|
   # flipper_post_install(installer)
+  # If TV corner click functionality is needed, run this
+  tvos_corner_clicks_post_install(installer)
 end
 

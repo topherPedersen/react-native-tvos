@@ -104,6 +104,17 @@ def has_pod(installer, name)
   installer.pods_project.pod_group(name) != nil
 end
 
+# Post Install processing for Apple TV
+def tvos_corner_clicks_post_install(installer)
+  installer.pods_project.targets.each do |target|
+    if target.name == 'React-Core'
+      target.build_configurations.each do |config|
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ["${inherited}", "RN_TVOS_CORNER_CLICKS=1"]
+      end
+    end
+  end
+end
+
 # Post Install processing for Flipper
 def flipper_post_install(installer)
   installer.pods_project.targets.each do |target|
