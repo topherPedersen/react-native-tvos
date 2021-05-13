@@ -20,21 +20,13 @@
 #import <React/RCTUIManager.h>
 #import <GameController/GameController.h>
 
-typedef enum {
-    DPadStateNone,
-    DPadStateUpperLeft,
-    DPadStateUpperRight
-} DPadState;
-
 @interface RCTTVSelectGestureRecognizer : UITapGestureRecognizer
 
 @property (weak) RCTTVView *tvView;
 
 @end
 
-static float dpadX;
-static float dpadY;
-
+static float dpadX, dpadY;
 
 @implementation RCTTVSelectGestureRecognizer
 
@@ -57,7 +49,6 @@ static float dpadY;
             if (xValue != 0 && yValue != 0) {
                 dpadX = xValue;
                 dpadY = yValue;
-                NSLog(@"dpadLocation = %5.2f,%5.2f",dpadX,dpadY);
             }
         };
     }
@@ -65,32 +56,13 @@ static float dpadY;
 
 - (void)pressesBegan:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
 {
-    for (UIPress *press in presses) {
-        NSLog(@"press type = %ld, dpad = %5.2f,%5.2f", press.type, dpadX, dpadY);
-        if (press.type == UIPressTypeSelect) {
-
-            if ([self inUpperLeftArea]) {
-                [self.tvView sendSelectLeftNotification:self];
-            } else if ([self inUpperRightArea]) {
-                [self.tvView sendSelectRightNotification:self];
-            } else {
-                [super pressesBegan:presses withEvent:event];
-            }
+    for (UIPress *p in presses) {
+        if (p.type == UIPressTypeSelect) {
+            self.tvView.dpadX = dpadX;
+            self.tvView.dpadY = dpadY;
         }
     }
 }
-
-#define THRESHOLD 0.3
-- (BOOL)inUpperLeftArea
-{
-    return (dpadY > THRESHOLD && dpadX < -THRESHOLD);
-}
-
-- (BOOL)inUpperRightArea
-{
-    return (dpadY > THRESHOLD && dpadX > THRESHOLD);
-}
-
 
 @end
 
@@ -158,8 +130,27 @@ RCT_NOT_IMPLEMENTED(-(instancetype)initWithCoder : unused)
   }
 }
 
+#define THRESHOLD 0.3
+- (BOOL)inUpperLeftArea
+{
+    return (self.dpadY > THRESHOLD && self.dpadX < -THRESHOLD);
+}
+
+- (BOOL)inUpperRightArea
+{
+    return (self.dpadY > THRESHOLD && self.dpadX > THRESHOLD);
+}
+
 - (void)handleSelect:(__unused UIGestureRecognizer *)r
 {
+    if ([self inUpperLeftArea]) {
+        [self sendSelectLeftNotification:r];
+        return;
+    }
+    if ([self inUpperRightArea]) {
+        [self sendSelectRightNotification:r];
+        return;
+    }
   if ([self.tvParallaxProperties[@"enabled"] boolValue] == YES) {
     float magnification = [self.tvParallaxProperties[@"magnification"] floatValue];
     float pressMagnification = [self.tvParallaxProperties[@"pressMagnification"] floatValue];
