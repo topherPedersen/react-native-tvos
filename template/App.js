@@ -14,6 +14,7 @@ import ReactNative, {
   Platform,
   View,
   Text,
+  useTVEventHandler,
 } from 'react-native';
 
 import {
@@ -27,6 +28,11 @@ import {
 const StatusBar = Platform.isTV ? View : ReactNative.StatusBar;
 
 const App: () => React$Node = () => {
+  const [lastEventType, setLastEventType] = React.useState('');
+  const myTVEventHandler = (evt) => {
+    setLastEventType(evt.eventType);
+  };
+  useTVEventHandler(myTVEventHandler);
   return (
     <>
       <StatusBar barStyle="dark-content" />
@@ -35,11 +41,12 @@ const App: () => React$Node = () => {
           contentInsetAdjustmentBehavior="automatic"
           style={styles.scrollView}>
           <Header />
-          {global.HermesInternal == null ? null : (
-            <View style={styles.engine}>
+          <View style={styles.engine}>
+            <Text style={styles.footer}>TVEvent: {lastEventType}</Text>
+            {global.HermesInternal == null ? null : (
               <Text style={styles.footer}>Engine: Hermes</Text>
-            </View>
-          )}
+            )}
+          </View>
           <View style={styles.body}>
             <View style={styles.sectionContainer}>
               <Text style={styles.sectionTitle}>Step One</Text>
