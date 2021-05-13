@@ -144,11 +144,11 @@ RCT_NOT_IMPLEMENTED(-(instancetype)initWithCoder : unused)
 - (void)handleSelect:(__unused UIGestureRecognizer *)r
 {
     if ([self inUpperLeftArea]) {
-        [self sendSelectLeftNotification:r];
+        [self sendStepLeftNotification:r];
         return;
     }
     if ([self inUpperRightArea]) {
-        [self sendSelectRightNotification:r];
+        [self sendStepRightNotification:r];
         return;
     }
   if ([self.tvParallaxProperties[@"enabled"] boolValue] == YES) {
@@ -367,14 +367,14 @@ RCT_NOT_IMPLEMENTED(-(instancetype)initWithCoder : unused)
     [self sendNotificationWithEventType:@"select"];
 }
 
-- (void)sendSelectLeftNotification:(UIGestureRecognizer *)recognizer
+- (void)sendStepLeftNotification:(UIGestureRecognizer *)recognizer
 {
-    [self sendNotificationWithEventType:@"selectLeft"];
+    [self sendNotificationWithEventType:@"stepLeft"];
 }
 
-- (void)sendSelectRightNotification:(UIGestureRecognizer *)recognizer
+- (void)sendStepRightNotification:(UIGestureRecognizer *)recognizer
 {
-    [self sendNotificationWithEventType:@"selectRight"];
+    [self sendNotificationWithEventType:@"stepRight"];
 }
 
 - (void)sendNotificationWithEventType:(NSString * __nonnull)eventType
