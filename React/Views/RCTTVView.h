@@ -15,6 +15,12 @@
 @interface RCTTVView : RCTView
 
 /**
+ * For Siri remote corner presses
+ */
+@property (atomic, assign) float dpadX;
+@property (atomic, assign) float dpadY;
+
+/**
  * TV event handlers
  */
 @property (nonatomic, assign) BOOL isTVSelectable; // True if this view is TV-focusable
@@ -54,6 +60,8 @@
  * Send Select Notification to listeners
  */
 - (void)sendSelectNotification:(UIGestureRecognizer *)recognizer;
+- (void)sendSelectLeftNotification:(UIGestureRecognizer *)recognizer;
+- (void)sendSelectRightNotification:(UIGestureRecognizer *)recognizer;
 
 /**
  * Adds Parallax Motion Effects if tvParallaxProperty is enabled
