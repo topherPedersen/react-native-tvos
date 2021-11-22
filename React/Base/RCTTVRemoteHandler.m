@@ -32,6 +32,11 @@ NSString *const RCTTVRemoteEventRight = @"right";
 NSString *const RCTTVRemoteEventUp = @"up";
 NSString *const RCTTVRemoteEventDown = @"down";
 
+NSString *const RCTTVRemoteEventLongLeft = @"longLeft";
+NSString *const RCTTVRemoteEventLongRight = @"longRight";
+NSString *const RCTTVRemoteEventLongUp = @"longUp";
+NSString *const RCTTVRemoteEventLongDown = @"longDown";
+
 NSString *const RCTTVRemoteEventSwipeLeft = @"swipeLeft";
 NSString *const RCTTVRemoteEventSwipeRight = @"swipeRight";
 NSString *const RCTTVRemoteEventSwipeUp = @"swipeUp";
@@ -39,15 +44,15 @@ NSString *const RCTTVRemoteEventSwipeDown = @"swipeDown";
 
 @interface RCTTVRemoteHandler()
 
-@property (nonatomic, copy, readonly) NSDictionary *tvRemoteGestureRecognizers;
-@property (nonatomic, strong) UITapGestureRecognizer *tvMenuKeyRecognizer;
-@property (nonatomic, weak) UIView *view;
+  @property (nonatomic, copy, readonly) NSDictionary *tvRemoteGestureRecognizers;
+  @property (nonatomic, strong) UITapGestureRecognizer *tvMenuKeyRecognizer;
+  @property (nonatomic, weak) UIView *view;
 
-@end
+  @end
 
-@implementation RCTTVRemoteHandler {
-  NSMutableDictionary<NSString *, UIGestureRecognizer *> *_tvRemoteGestureRecognizers;
-}
+  @implementation RCTTVRemoteHandler {
+    NSMutableDictionary<NSString *, UIGestureRecognizer *> *_tvRemoteGestureRecognizers;
+  }
 
 #pragma mark -
 #pragma mark Static setting for using menu key
@@ -56,12 +61,12 @@ static __volatile BOOL __useMenuKey = NO;
 
 + (BOOL)useMenuKey
 {
-    return __useMenuKey;
+  return __useMenuKey;
 }
 
 + (void)setUseMenuKey:(BOOL)useMenuKey
 {
-    __useMenuKey = useMenuKey;
+  __useMenuKey = useMenuKey;
 }
 
 #pragma mark -
@@ -70,16 +75,16 @@ static __volatile BOOL __useMenuKey = NO;
 - (instancetype)initWithView:(UIView *)view
 {
   if ((self = [super init])) {
-      _view = view;
-      [self setUpGestureRecognizers];
-      [self attachToView];
+    _view = view;
+    [self setUpGestureRecognizers];
+    [self attachToView];
   }
   return self;
 }
 
 - (void)dealloc
 {
-    [self detachFromView];
+  [self detachFromView];
 }
 
 #pragma mark -
@@ -87,7 +92,7 @@ static __volatile BOOL __useMenuKey = NO;
 
 - (void)setUpGestureRecognizers
 {
-    _tvRemoteGestureRecognizers = [NSMutableDictionary dictionary];
+  _tvRemoteGestureRecognizers = [NSMutableDictionary dictionary];
   // Recognizers for Apple TV remote buttons
   // Menu recognizer
   self.tvMenuKeyRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(menuPressed:)];
@@ -134,6 +139,22 @@ static __volatile BOOL __useMenuKey = NO;
                                         pressType:UIPressTypeSelect
                                              name:RCTTVRemoteEventLongSelect];
 
+  [self addLongPressGestureRecognizerWithSelector:@selector(longUpPressed:)
+                                        pressType:UIPressTypeUpArrow
+                                             name:RCTTVRemoteEventLongUp];
+
+  [self addLongPressGestureRecognizerWithSelector:@selector(longDownPressed:)
+                                        pressType:UIPressTypeDownArrow
+                                             name:RCTTVRemoteEventLongDown];
+
+  [self addLongPressGestureRecognizerWithSelector:@selector(longLeftPressed:)
+                                        pressType:UIPressTypeLeftArrow
+                                             name:RCTTVRemoteEventLongLeft];
+
+  [self addLongPressGestureRecognizerWithSelector:@selector(longRightPressed:)
+                                        pressType:UIPressTypeRightArrow
+                                             name:RCTTVRemoteEventLongRight];
+
   // Recognizers for Apple TV remote trackpad swipes
 
   // Up
@@ -160,40 +181,40 @@ static __volatile BOOL __useMenuKey = NO;
 
 - (void)attachToView
 {
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(enableTVMenuKey)
-                                                 name:RCTTVEnableMenuKeyNotification
-                                               object:nil];
+  [[NSNotificationCenter defaultCenter] addObserver:self
+                                           selector:@selector(enableTVMenuKey)
+                                               name:RCTTVEnableMenuKeyNotification
+                                             object:nil];
 
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(disableTVMenuKey)
-                                                 name:RCTTVDisableMenuKeyNotification
-                                               object:nil];
-    for (NSString *key in [self.tvRemoteGestureRecognizers allKeys]) {
-      [_view addGestureRecognizer:self.tvRemoteGestureRecognizers[key]];
-    }
-    if ([RCTTVRemoteHandler useMenuKey]) {
-        [self enableTVMenuKey];
-    } else {
-        [self disableTVMenuKey];
-    }
+  [[NSNotificationCenter defaultCenter] addObserver:self
+                                           selector:@selector(disableTVMenuKey)
+                                               name:RCTTVDisableMenuKeyNotification
+                                             object:nil];
+  for (NSString *key in [self.tvRemoteGestureRecognizers allKeys]) {
+    [_view addGestureRecognizer:self.tvRemoteGestureRecognizers[key]];
+  }
+  if ([RCTTVRemoteHandler useMenuKey]) {
+    [self enableTVMenuKey];
+  } else {
+    [self disableTVMenuKey];
+  }
 }
 
 - (void)detachFromView
 {
-    if ([[self.view gestureRecognizers] containsObject:self.tvMenuKeyRecognizer]) {
-        [self.view removeGestureRecognizer:self.tvMenuKeyRecognizer];
-    }
-    for (NSString *key in [self.tvRemoteGestureRecognizers allKeys]) {
-      [_view removeGestureRecognizer:self.tvRemoteGestureRecognizers[key]];
-    }
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:RCTTVEnableMenuKeyNotification
-                                                  object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                    name:RCTTVDisableMenuKeyNotification
-                                                  object:nil];
-    
+  if ([[self.view gestureRecognizers] containsObject:self.tvMenuKeyRecognizer]) {
+                  [self.view removeGestureRecognizer:self.tvMenuKeyRecognizer];
+  }
+  for (NSString *key in [self.tvRemoteGestureRecognizers allKeys]) {
+    [_view removeGestureRecognizer:self.tvRemoteGestureRecognizers[key]];
+  }
+  [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                  name:RCTTVEnableMenuKeyNotification
+                                                object:nil];
+  [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                  name:RCTTVDisableMenuKeyNotification
+                                                object:nil];
+
 }
 
 # pragma mark -
@@ -201,20 +222,20 @@ static __volatile BOOL __useMenuKey = NO;
 
 - (void)enableTVMenuKey
 {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        if (![[self.view gestureRecognizers] containsObject:self.tvMenuKeyRecognizer]) {
-            [self.view addGestureRecognizer:self.tvMenuKeyRecognizer];
-        }
-    });
+  dispatch_async(dispatch_get_main_queue(), ^{
+      if (![[self.view gestureRecognizers] containsObject:self.tvMenuKeyRecognizer]) {
+                          [self.view addGestureRecognizer:self.tvMenuKeyRecognizer];
+                          }
+                          });
 }
 
 - (void)disableTVMenuKey
 {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        if ([[self.view gestureRecognizers] containsObject:self.tvMenuKeyRecognizer]) {
-            [self.view removeGestureRecognizer:self.tvMenuKeyRecognizer];
-        }
-    });
+  dispatch_async(dispatch_get_main_queue(), ^{
+      if ([[self.view gestureRecognizers] containsObject:self.tvMenuKeyRecognizer]) {
+                      [self.view removeGestureRecognizer:self.tvMenuKeyRecognizer];
+                      }
+                      });
 }
 
 # pragma mark -
@@ -288,6 +309,26 @@ static __volatile BOOL __useMenuKey = NO;
 - (void)tappedRight:(UIGestureRecognizer *)r
 {
   [self sendAppleTVEvent:RCTTVRemoteEventRight toView:r.view];
+}
+
+- (void)longUpPressed:(UIGestureRecognizer *)r
+{
+  [self sendAppleTVEvent:RCTTVRemoteEventLongUp toView:r.view];
+}
+
+- (void)longDownPressed:(UIGestureRecognizer *)r
+{
+  [self sendAppleTVEvent:RCTTVRemoteEventLongDown toView:r.view];
+}
+
+- (void)longLeftPressed:(UIGestureRecognizer *)r
+{
+  [self sendAppleTVEvent:RCTTVRemoteEventLongLeft toView:r.view];
+}
+
+- (void)longRightPressed:(UIGestureRecognizer *)r
+{
+  [self sendAppleTVEvent:RCTTVRemoteEventLongRight toView:r.view];
 }
 
 #pragma mark -
