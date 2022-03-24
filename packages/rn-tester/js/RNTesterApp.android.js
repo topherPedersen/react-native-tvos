@@ -8,10 +8,16 @@
  * @flow
  */
 
-import {AppRegistry} from 'react-native';
+import { AppRegistry, LogBox } from 'react-native';
 
 import RNTesterApp from './RNTesterAppShared';
 
 AppRegistry.registerComponent('RNTesterApp', () => RNTesterApp);
 
 module.exports = RNTesterApp;
+
+/**
+ * Turn off yellow warning boxes because they cannot be dismissed on Chromecast
+ * with Google TV using the Google TV remote control.
+ */
+LogBox.ignoreAllLogs()
